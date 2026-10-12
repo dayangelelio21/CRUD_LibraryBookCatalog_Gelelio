@@ -1,0 +1,10 @@
+import { Book } from "../models/Book.js";
+export const bookController={
+ index:async(req,res)=>{try{res.render("insert",{books:await Book.findAll({order:[["title","ASC"]]})});}catch(e){res.status(500).send(e.message);}},
+ insert:async(req,res)=>{try{const {title,author,genre,isbn,totalCopies}=req.body;const n=Math.max(0,parseInt(totalCopies,10)||0);await Book.create({title,author,genre,isbn:isbn||null,totalCopies:n,availableCopies:n});res.redirect("/books");}catch(e){res.status(500).send(e.message);}},
+ show:async(req,res)=>{try{const book=await Book.findByPk(req.params.id);if(!book)return res.status(404).send("Book not found");res.render("edit",{book});}catch(e){res.status(500).send(e.message);}},
+ update:async(req,res)=>{try{const b=await Book.findByPk(req.params.id);if(!b)return res.status(404).send("Book not found");const {title,author,genre,isbn,totalCopies}=req.body;const n=Math.max(0,parseInt(totalCopies,10)||0),borrowed=b.totalCopies-b.availableCopies;if(n<borrowed)return res.status(400).send("Total copies cannot be less than copies currently borrowed.");await b.update({title,author,genre,isbn:isbn||null,totalCopies:n,availableCopies:n-borrowed});res.redirect("/books");}catch(e){res.status(500).send(e.message);}},
+ delete:async(req,res)=>{try{const b=await Book.findByPk(req.params.id);if(!b)return res.status(404).send("Book not found");await b.destroy();res.redirect("/books");}catch(e){res.status(500).send(e.message);}},
+ borrow:async(req,res)=>{try{const b=await Book.findByPk(req.params.id);if(!b)return res.status(404).send("Book not found");if(!b.availableCopies)return res.status(400).send("No copies available");await b.update({availableCopies:b.availableCopies-1});res.redirect("/books");}catch(e){res.status(500).send(e.message);}},
+ returnBook:async(req,res)=>{try{const b=await Book.findByPk(req.params.id);if(!b)return res.status(404).send("Book not found");if(b.availableCopies>=b.totalCopies)return res.status(400).send("All copies are already returned");await b.update({availableCopies:b.availableCopies+1});res.redirect("/books");}catch(e){res.status(500).send(e.message);}}
+};
